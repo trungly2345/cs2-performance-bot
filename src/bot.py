@@ -1,0 +1,1 @@
+print("[CS2 Performance bot] \n bot initialized!")
