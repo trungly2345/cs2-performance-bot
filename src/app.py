@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Hello, Flask!"
+    return "CS2 Bot Analysis Tool"
 
 if __name__ == "__main__":
     app.run(debug=True)
