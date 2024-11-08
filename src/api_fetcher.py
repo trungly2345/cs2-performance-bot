@@ -40,7 +40,7 @@ def get_all_matches(player_id):
         params = {
                 "game" : GAME,
                 "offset" : 0,
-                "limit" : 20,
+                "limit" : 50,
         }
         print("Request URL""", url)
         print("Request Params", params)
@@ -52,24 +52,72 @@ def get_all_matches(player_id):
         # how do i get a status code from
         if response.status_code == 200:
                 # get the array of matches
-                data = response.json().get('items',[]); # get the matches data from the url endpoint
+                data = response.json().get('items',[])# get the matches data from the url endpoint
                 return data
         else:
                 print(f"Error: {response.status_code}, {response.text}")
                 return []
 
+def get_statistics(player_id):
+        url = f"https://open.faceit.com/data/v4/players/{player_id}/games/{GAME}/stats"
+        params = {
+                "limit" : 50
+        }
+        response = requests.get(url, headers=headers, params=params)
+
+       
+        if response.status_code == 200:
+                data = response.json()
+                return data
+
+        else:
+                print(f"Error: {response.status_code}, {response.text}")
+                return None
 
 
+def summarize_performance(statistics):
+        if not statistics:
+                print("Error: No stats found.")
+                return 
+        
+        try:
+                items = statistics['items']
+                total_matches = len(items)
+                total_kills = sum(int(item['stats'].get('Kills'), 0) for item in items)
+                total_deaths = sum(int(item['stats'].get('Deaths'), 0) for item in items)
+                total_wins = sum(1 for item in items if item['stats'].get("Result", "0") == "1")
+                total_headshots = sum(int(item['stats'].get("Headshots", 0)) for item in items)
+                total_headshot_percentage = sum(int(item['stats'].get("Headshots %", 0)) for item in items)
+               
+                
+                avg_headshot_percentage = total_headshot_percentage / total_matches if total_matches > 0 else 0
+                win_rate = (total_wins / total_matches) * 100 if total_matches > 0 else 0
+                avg_kd = total_kills / total_deaths if total_deaths > 0 else 0
 
+               
 
+                print(f"Summary of Overall Performance ({total_matches} Matches):")
+                print(f"  Total Kills: {total_kills}")
+                print(f"  Total Deaths: {total_deaths}")
+                print(f"  Overall K/D Ratio: {avg_kd:.2f} ")
+                print(f"  Win Rate: {win_rate:.2f}%")
+                print(f"  Average Headshot Percentage: {avg_headshot_percentage:.2f}%")
+
+        except KeyError as e:
+                print(f"Error: Missing expected key {str(e)} in match data.")
+        except ZeroDivisionError:
+                print("Error: Division by zero occurred. No deaths recorded.")
 
 
 if __name__ == "__main__":
        
        
+        Playernickname = "tommyy_24"
         player_id = get_player_id(Playernickname)
-        print("Player ID", player_id)
-        matches = get_all_matches(player_id)
-        print(matches)
+        if player_id:
+                stats = get_statistics(player_id)
+                summarize_performance(stats)
+                
+
         
 

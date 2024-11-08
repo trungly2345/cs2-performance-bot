@@ -8,9 +8,9 @@ This project is a **CS2 Performance Analysis Bot** designed to help players impr
 ### 1. Data Collection
 - **Goal**: Fetch match history and demo URLs from the Faceit API.
 - **Tasks**:
-  - Retrieve recent matches for a specific player.
-  - Implement pagination to collect matches over a defined period (e.g., weekly).
-  - Extract demo URLs for further analysis.
+  - Retrieve recent matches for a specific player. # completed 
+  - Implement pagination to collect matches over a defined period (e.g., weekly). # completed 
+  - Extract demo URLs for further analysis. # completed 
 
 ### 2. Demo Parsing
 - **Goal**: Extract in-game events from demo files.
