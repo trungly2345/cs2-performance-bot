@@ -1,14 +1,15 @@
 from binascii import Error
 from datetime import datetime, timedelta
+import pandas as pd
 
 import requests
 from flask import json
 from requests import Response
 
 API_KEY = "99366875-fbd1-4080-8e8c-4c45829fe466"
-Playernickname= "tommyy_24"
+Playernickname= "pienix"
 GAME = "cs2"
-Player_id =  "47a78e05-9312-4e28-9056-63cfdfbd8252"
+
 
 headers = {
     "Authorization" : f"Bearer {API_KEY}",
@@ -61,7 +62,7 @@ def get_all_matches(player_id):
 def get_statistics(player_id):
         url = f"https://open.faceit.com/data/v4/players/{player_id}/games/{GAME}/stats"
         params = {
-                "limit" : 50
+                "limit" : 50,
         }
         response = requests.get(url, headers=headers, params=params)
 
@@ -76,48 +77,84 @@ def get_statistics(player_id):
 
 
 def summarize_performance(statistics):
-        if not statistics:
-                print("Error: No stats found.")
-                return 
+    if not statistics:
+        print("Error: No stats found.")
+        return 
+    
+
+    try:
+        items = statistics['items']
+        matches_data = []
+
+        for item in items:
+            match_id = item['stats'].get('Match Id', 'N/A')
+            kills = int(item['stats'].get('Kills', 0))
+            deaths = int(item['stats'].get('Deaths', 0))
+            kd_ratio = kills / deaths if deaths > 0 else 0
+            headshots = int(item['stats'].get('Headshots', 0))
+            headshot_percentage = int(item['stats'].get('Headshots %', 0))
+            result = item['stats'].get("Result", "0")
+
         
-        try:
-                items = statistics['items']
-                total_matches = len(items)
-                total_kills = sum(int(item['stats'].get('Kills'), 0) for item in items)
-                total_deaths = sum(int(item['stats'].get('Deaths'), 0) for item in items)
-                total_wins = sum(1 for item in items if item['stats'].get("Result", "0") == "1")
-                total_headshots = sum(int(item['stats'].get("Headshots", 0)) for item in items)
-                total_headshot_percentage = sum(int(item['stats'].get("Headshots %", 0)) for item in items)
-               
-                
-                avg_headshot_percentage = total_headshot_percentage / total_matches if total_matches > 0 else 0
-                win_rate = (total_wins / total_matches) * 100 if total_matches > 0 else 0
-                avg_kd = total_kills / total_deaths if total_deaths > 0 else 0
 
-               
+             
 
-                print(f"Summary of Overall Performance ({total_matches} Matches):")
-                print(f"  Total Kills: {total_kills}")
-                print(f"  Total Deaths: {total_deaths}")
-                print(f"  Overall K/D Ratio: {avg_kd:.2f} ")
-                print(f"  Win Rate: {win_rate:.2f}%")
-                print(f"  Average Headshot Percentage: {avg_headshot_percentage:.2f}%")
+            matches_data.append({
+                "match_id" : match_id,
+                "Kills" : kills,
+                "Deaths" : deaths,
+                "K/D Ratio" :kd_ratio,
+                "headshots" : headshots,
+                "headshot %" : headshot_percentage,
+                "Result" : result,
+                })
 
-        except KeyError as e:
-                print(f"Error: Missing expected key {str(e)} in match data.")
-        except ZeroDivisionError:
-                print("Error: Division by zero occurred. No deaths recorded.")
+        df = pd.DataFrame(matches_data)
+        
+         # Summary calculations
+        total_kills = df['Kills'].sum()
+        total_deaths = df['Deaths'].sum()
+        overall_kd_ratio = df['K/D Ratio'].mean()
+        win_rate = (df['Result'] == "1").sum() / len(df) * 100
+        avg_headshot_percentage = df['headshot %'].mean()
 
+      
+       
+
+
+         # Print summary
+        print(f"\n{'Summary of Overall Performance':^50}")
+        print(f"{'-'*50}")
+        print(f"{'Total Matches':<25}: {len(df):>8}")
+        print(f"{'Total Kills':<25}: {total_kills:>8}")
+        print(f"{'Total Deaths':<25}: {total_deaths:>8}")
+        print(f"{'Overall K/D Ratio':<25}: {overall_kd_ratio:>8.2f}")
+        print(f"{'Win Rate':<25}: {win_rate:>8.2f}%")
+        print(f"{'Average Headshot %':<25}: {avg_headshot_percentage:>8.2f}%")
+        print(f"{'-'*50}\n")
+
+        # Print detailed match summary
+        print(f"{'Detailed Match Summary':^50}")
+        print(f"{'-'*50}")
+        print(df.to_string(index=False))
+
+       
+
+        df.to_csv("matches.csv", index=False)
+        print("Match data saved to matches.csv")
+
+
+
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
-       
-       
-        Playernickname = "tommyy_24"
-        player_id = get_player_id(Playernickname)
-        if player_id:
-                stats = get_statistics(player_id)
-                summarize_performance(stats)
-                
-
-        
+    print("\n")
+    Playernickname = "tommyy_24"  # Replace with actual player nickname
+    print("Fetching player ID...  " + Playernickname)
+    player_id = get_player_id(Playernickname)
+    print("Player ID", player_id)
+    if player_id:
+        stats = get_statistics(player_id)
+        summarize_performance(stats)
 

@@ -1,12 +1,21 @@
 
 from demoparser2 import DemoParser
+import pandas as pd
 #initalize parser with with the file demo path
-parser = DemoParser("path to demo.demo")
+# Initialize parser with the demo file path
+parser = DemoParser("nuke_oct_27.dem")
 
+# Parse all events
+events = parser.parse_events(["all"])
 
-# need the demo path
-# can access it through faceit
-#faceit maximum tick is 128
+# Convert the parsed events to a DataFrame if they are in a list format
+if isinstance(events, list):
+    df = pd.DataFrame(events)
+    print("Parsed Events Sample:")
+    print(df.head())  # Display the first few rows of the parsed events
+else:
+    print("Unexpected format of parsed events.")
+
 
 
 
