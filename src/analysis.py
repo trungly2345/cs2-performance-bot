@@ -4,7 +4,7 @@ import pandas as pd
 print("hello")
 #initalize parser with with the file demo path
 # Initialize parser with the demo file path
-parser = DemoParser("nuke_oct_27.dem")
+parser = DemoParser()
 
 MY_STEAM_ID = 76561199403108558
 
