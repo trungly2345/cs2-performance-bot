@@ -1,14 +1,15 @@
 from binascii import Error
 from datetime import datetime, timedelta
 import pandas as pd
+import json
 
 import requests
 from flask import json
 from requests import Response
 
 API_KEY = "99366875-fbd1-4080-8e8c-4c45829fe466"
-Playernickname= "pienix"
 GAME = "cs2"
+matchid = "1-a6bf2bdb-e532-4b52-9744-c7665bfa3713 "
 
 
 headers = {
@@ -16,7 +17,53 @@ headers = {
     'Content-Type': 'application/json'
 }
 
+class DemoFetcher:
+    def __init__(self, API_KEY):
+        self.api_key = API_KEY
 
+    def get_demo_url(self, match_id):
+        # Example method to get demo URL
+        # This is just a placeholder implementation
+        match_details = get_match_details(match_id)
+        if match_details:
+                demourl = match_details.get('demo_url', ['N/A'])[0]
+                print(f"Demo URL: {demourl}")
+                return demourl
+        else:
+                print("Error: No match details found.")
+                return None
+
+    def download_demo_file(self, url, save_path):
+        response = requests.get(url,stream=True)
+        if response.status_code == 200:
+            with open(save_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            print(f"Downloaded demo file to {save_path}")
+        else:
+            print(f"Error: {response.status_code}, {response.text}")
+            return None
+
+
+def get_match_details(matchid):
+      url = f"https://open.faceit.com/data/v4/matches/{matchid}"
+
+      response = requests.get(url, headers=headers)
+
+      if response.status_code == 200:
+                match_details = response.json()
+                return match_details
+      else:
+                print(f"Error: {response.status_code}, {response.text}")
+                return None
+
+
+def get_API_KEY():
+    return API_KEY
+
+
+def get_match_id():
+      return matchid
 
 def get_player_id(Playernickname):
         url = f"https://open.faceit.com/data/v4/players?nickname={Playernickname}"
@@ -88,6 +135,7 @@ def summarize_performance(statistics):
 
         for item in items:
             match_id = item['stats'].get('Match Id', 'N/A')
+            map = item['stats'].get('Map', 'N/A')
             kills = int(item['stats'].get('Kills', 0))
             deaths = int(item['stats'].get('Deaths', 0))
             kd_ratio = kills / deaths if deaths > 0 else 0
@@ -101,14 +149,18 @@ def summarize_performance(statistics):
 
             matches_data.append({
                 "match_id" : match_id,
+                "map" : map,
                 "Kills" : kills,
                 "Deaths" : deaths,
                 "K/D Ratio" :kd_ratio,
                 "headshots" : headshots,
                 "headshot %" : headshot_percentage,
                 "Result" : result,
+
                 })
 
+
+        
         df = pd.DataFrame(matches_data)
         
          # Summary calculations
@@ -117,6 +169,7 @@ def summarize_performance(statistics):
         overall_kd_ratio = df['K/D Ratio'].mean()
         win_rate = (df['Result'] == "1").sum() / len(df) * 100
         avg_headshot_percentage = df['headshot %'].mean()
+        map = df['map'].value_counts().idxmax()
 
       
        
@@ -134,7 +187,7 @@ def summarize_performance(statistics):
         print(f"{'-'*50}\n")
 
         # Print detailed match summary
-        print(f"{'Detailed Match Summary':^50}")
+        print(f"{'Detailed Match Summary from the Past 50 matches':^50}")
         print(f"{'-'*50}")
         print(df.to_string(index=False))
 
@@ -143,18 +196,67 @@ def summarize_performance(statistics):
         df.to_csv("matches.csv", index=False)
         print("Match data saved to matches.csv")
 
+      
 
+
+
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+def summarize_match(match_details):
+    if not match_details:
+        print("Error: No match details found.")
+        return
+
+    try:
+        # Pretty-print the JSON data
+        print("Match Details received:")
+        print(json.dumps(match_details, indent=4))
+
+        
+        teams = match_details.get('teams', {})
+        map_name = match_details.get('voting', {}).get('map', {}).get('pick', ['N/A'])[0]
+        demo_url = match_details.get('demo_url', ['N/A'])[0]
+        match_id = match_details.get('match_id', 'N/A')
+        region = match_details.get('region', 'N/A')
+        results = match_details.get('results', {})
+
+        matches_data = []
+
+        for faction, details in teams.items():
+            for player in details.get('roster', []):
+                matches_data.append({
+                    "faction": faction,
+                    "game_player_name": player.get('game_player_name', 'N/A'),
+                    "game_skill_level": player.get('game_skill_level', 'N/A'),
+                    "map": map_name,
+                    "demo_url": demo_url,
+                    "match_id": match_id,
+                    "results": results,
+                    "region": region,
+                })
+
+        df = pd.DataFrame(matches_data)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_colwidth', 50)
+        pd.set_option('display.width', 1000)
+
+        print("\nMatch Details in Tabular Format:")
+        print(df[['faction', 'game_player_name', 'game_skill_level', 'map', 'region',]])
 
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
     print("\n")
-    Playernickname = "pienix"  # Replace with actual player nickname
+    Playernickname = "tommyy_24"  # Replace with actual player nickname
     print("Fetching player ID...  " + Playernickname)
     player_id = get_player_id(Playernickname)
     print("Player ID", player_id)
     if player_id:
         stats = get_statistics(player_id)
         summarize_performance(stats)
+        match_details = get_match_details(matchid)
+        print("Match details:")
+        summarize_match(match_details)
 

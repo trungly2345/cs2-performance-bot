@@ -1,18 +1,28 @@
-
+import requests
 from demoparser2 import DemoParser
 import pandas as pd
-print("hello")
-#initalize parser with with the file demo path
-# Initialize parser with the demo file path
-parser = DemoParser()
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 MY_STEAM_ID = 76561199403108558
 
-# Parse all events
+parser = DemoParser("nuke_oct_27.dem")
 
 df = parser.parse_event("player_death", player=["last_place_name"])
-df_coords = df[["attacker_posX", "attacker_posY", "user_posX", "user_posY"]]
-print(df_coords.head())
+print("Columns in DataFrame:" ,df.columns)
+
+
+
+required_columns = ["attacker_posX", "attacker_posY", "user_posX", "user_posY"]
+missing_columns = [col for col in required_columns if col not in df.columns]
+
+
+if missing_columns:
+    print(f"Missing columns: {missing_columns}")
+else: 
+    df_coords = df[required_columns]
+    print(df_coords.head())
+
 if df.empty:
     print("No data")
 
@@ -36,6 +46,9 @@ print(f"My Deaths:\n{my_deaths}")
 # get a list of all zones
 all_unique_zones = my_kills["attacker_last_place_name"].unique().tolist()
 all_unique_zones.extend(my_deaths["user_last_place_name"].unique())
+
+
+
 
 if not all_unique_zones:
     print("No data")
