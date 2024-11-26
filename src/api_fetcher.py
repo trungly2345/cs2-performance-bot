@@ -249,7 +249,7 @@ def summarize_match(match_details):
 
 if __name__ == "__main__":
     print("\n")
-    Playernickname = "tommyy_24"  # Replace with actual player nickname
+    Playernickname = "pienix"  # Replace with actual player nickname
     print("Fetching player ID...  " + Playernickname)
     player_id = get_player_id(Playernickname)
     print("Player ID", player_id)
